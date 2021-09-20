@@ -1,0 +1,11 @@
+*.pyc
+*.pyo
+*.so
+.eggs
+.tox
+dist
+build
+target
+.pytest_cache
+*.egg-info
+setuptools_rust_tomlgen/version.py

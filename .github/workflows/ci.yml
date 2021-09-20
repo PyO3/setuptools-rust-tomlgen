@@ -1,0 +1,74 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  fmt:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - run: pip install black
+
+      - run: black --check .
+
+  build:
+    name:  ${{ matrix.python-version }} ${{ matrix.platform.os }}-${{ matrix.platform.python-architecture }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false  # If one platform fails, allow the rest to keep testing.
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9, 3.10-dev, pypy-3.6, pypy-3.7]
+        platform: [
+          { os: "macos-latest",   python-architecture: "x64", rust-target: "x86_64-apple-darwin" },
+          { os: "ubuntu-latest", python-architecture: "x64", rust-target: "x86_64-unknown-linux-gnu" },
+          { os: "windows-latest", python-architecture: "x64", rust-target: "x86_64-pc-windows-msvc" },
+          { os: "windows-latest", python-architecture: "x86", rust-target: "i686-pc-windows-msvc" },
+        ]
+        exclude:
+          # There is no 64-bit pypy on windows for pypy-3.6
+          - python-version: pypy-3.6
+            platform: { os: "windows-latest", python-architecture: "x64" }
+          # PyPy 3.7 on Windows doesn't release 32-bit builds any more
+          - python-version: pypy-3.7
+            platform: { os: "windows-latest", python-architecture: "x86" }
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.platform.python-architecture }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.platform.rust-target }}
+          profile: minimal
+          default: true
+
+      - name: Install test dependencies
+        run: pip install --upgrade tox setuptools
+
+      - name: Build package
+        run: pip install -e .
+
+      - name: Test examples
+        shell: bash
+        env:
+          PYTHON: ${{ matrix.python-version }}
+        run: |
+          for example_dir in examples/*; do
+              tox -c $example_dir -e py
+          done
