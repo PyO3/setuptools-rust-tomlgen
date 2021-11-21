@@ -26,9 +26,9 @@ jobs:
     strategy:
       fail-fast: false  # If one platform fails, allow the rest to keep testing.
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9, 3.10-dev, pypy-3.6, pypy-3.7]
+        python-version: [3.6, 3.7, 3.8, 3.9, "3.10", pypy-3.6, pypy-3.7]
         platform: [
-          { os: "macos-latest",   python-architecture: "x64", rust-target: "x86_64-apple-darwin" },
+          { os: "macos-latest", python-architecture: "x64", rust-target: "x86_64-apple-darwin" },
           { os: "ubuntu-latest", python-architecture: "x64", rust-target: "x86_64-unknown-linux-gnu" },
           { os: "windows-latest", python-architecture: "x64", rust-target: "x86_64-pc-windows-msvc" },
           { os: "windows-latest", python-architecture: "x86", rust-target: "i686-pc-windows-msvc" },
@@ -37,6 +37,9 @@ jobs:
           # There is no 64-bit pypy on windows for pypy-3.6
           - python-version: pypy-3.6
             platform: { os: "windows-latest", python-architecture: "x64" }
+          # No support for pypy-3.6 on macos 11 github runners
+          - python-version: pypy-3.6
+            platform: { os: "macos-latest", python-architecture: "x64" }
           # PyPy 3.7 on Windows doesn't release 32-bit builds any more
           - python-version: pypy-3.7
             platform: { os: "windows-latest", python-architecture: "x86" }
